@@ -217,13 +217,51 @@ cd /path/to/target-project
 
 ---
 
-### 4. codex-companyを起動する
+### 4. 初回起動する
 
 ```bash
 ./bin/codex-company "通知機能を作りたい"
 ```
 
 これで、役職ごとのCodex画面が起動します。
+
+---
+
+### 5. 2回目以降に起動する
+
+2回目以降は、`git clone` や `install.sh` は不要です。
+
+一度インストールした対象プロジェクトへ移動して、`./bin/codex-company` を実行するだけです。
+
+```bash
+cd /path/to/target-project
+./bin/codex-company "今日やりたい作業内容を書く"
+```
+
+例:
+
+```bash
+cd ~/projects/my-app
+./bin/codex-company "ログイン画面のデザインを見直したい"
+```
+
+前回のtmux画面から離れただけで、まだセッションが残っている場合は、起動時に表示されたセッション名で復帰できます。
+
+```bash
+tmux attach -t codex-company-20260528-120000
+```
+
+セッション名が分からない場合は、一覧を確認します。
+
+```bash
+tmux ls
+```
+
+新しく作業を始める場合は、通常どおりもう一度起動します。
+
+```bash
+./bin/codex-company "次にやりたい作業内容を書く"
+```
 
 ---
 
@@ -549,7 +587,30 @@ tmuxで6分割画面が開けば成功です。
 
 ---
 
-### 7. 新規アプリ作成ルールの確認
+### 7. 2回目以降の起動確認
+
+一度インストール済みなら、再インストールは不要です。
+
+```bash
+cd /tmp/codex-company-test-project
+./bin/codex-company "2回目以降の起動テストです。コード変更はしないでください"
+```
+
+前回のtmuxセッションに戻りたい場合は、まず一覧を確認します。
+
+```bash
+tmux ls
+```
+
+残っているセッションに復帰します。
+
+```bash
+tmux attach -t セッション名
+```
+
+---
+
+### 8. 新規アプリ作成ルールの確認
 
 Codexに新しいアプリ作成を依頼した場合、最初に以下を作る運用です。
 
