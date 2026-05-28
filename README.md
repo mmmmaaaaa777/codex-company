@@ -158,7 +158,7 @@ codex-companyでは、これらをあらかじめ設定しておきます。
 ### 1. codex-companyを取得する
 
 ```bash
-git clone https://github.com/your-name/codex-company.git
+git clone https://github.com/mmmmaaaaa777/codex-company.git
 ```
 
 ```bash
@@ -398,7 +398,7 @@ Windows PowerShell向けのインストーラーです。
 ### 1. リポジトリを取得
 
 ```bash
-git clone https://github.com/your-name/codex-company.git
+git clone https://github.com/mmmmaaaaa777/codex-company.git
 cd codex-company
 ```
 
