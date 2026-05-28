@@ -102,12 +102,6 @@ cd /mnt/c/Users/user/codex-company
 
 `user` の部分は、自分のWindowsユーザー名に合わせてください。
 
-例:
-
-```bash
-cd /mnt/c/Users/t_maruyama/codex-company
-```
-
 ---
 
 ## 3. WSL側の必要ツールを入れる
