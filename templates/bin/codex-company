@@ -1,1 +1,225 @@
+#!/usr/bin/env bash
+set -euo pipefail
 
+TASK="${*:-}"
+
+if [ -z "$TASK" ]; then
+  echo "使い方:"
+  echo "  ./bin/codex-company \"作りたい内容\""
+  echo ""
+  echo "例:"
+  echo "  ./bin/codex-company \"通知機能を作りたい\""
+  exit 1
+fi
+
+if ! command -v tmux >/dev/null 2>&1; then
+  echo "tmux が見つかりません。"
+  echo ""
+  echo "Ubuntu / WSL の場合:"
+  echo "  sudo apt update && sudo apt install -y tmux"
+  exit 1
+fi
+
+if ! command -v codex >/dev/null 2>&1; then
+  echo "codex が見つかりません。"
+  echo "Codex CLI をセットアップしてから再実行してください。"
+  exit 1
+fi
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+SESSION="codex-company-$(date +%Y%m%d-%H%M%S)"
+RUN_DIR="$ROOT/.codex-company/runs/$(date +%Y%m%d-%H%M%S)"
+
+mkdir -p "$RUN_DIR"
+
+cat > "$RUN_DIR/pm.prompt" <<EOF
+\$company-plan
+
+社長からの依頼:
+${TASK}
+
+あなたは部長（PM）です。
+
+役割:
+- 作業を分解する
+- 必要な担当を判断する
+- デザイナー、フロントエンド、バックエンド、レビュアー・テスターへ渡す指示を作る
+- コード変更はしない
+- 進行中は、今どの観点を確認しているかを短く表示する
+
+出力:
+1. 目的
+2. 必要な担当
+3. 影響範囲
+4. 作業順序
+5. 各担当への指示
+6. リスク
+7. 次に社長が判断すること
+EOF
+
+cat > "$RUN_DIR/designer.prompt" <<EOF
+\$company-design
+
+社長からの依頼:
+${TASK}
+
+あなたはデザイナーです。
+
+役割:
+- UI/UXを確認する
+- 画面構成、文言、余白、色、文字サイズ、導線を確認する
+- スマホ、タブレット、PCのレスポンシブを確認する
+- コード変更はしない
+- フロントエンド担当へ渡せる具体的な指示を作る
+
+出力:
+1. 画面の目的
+2. 現状の問題
+3. 改善方針
+4. レイアウト指示
+5. レスポンシブ対応
+6. フロントエンドへの指示
+EOF
+
+cat > "$RUN_DIR/frontend.prompt" <<EOF
+\$company-frontend
+
+社長からの依頼:
+${TASK}
+
+あなたはフロントエンドエンジニアです。
+
+役割:
+- 画面、HTML、CSS、JavaScript、Blade、React、Vueなどを担当する
+- 変更前に、触る予定のファイルを表示する
+- バックエンド、DB、認証、権限は勝手に変更しない
+- 必要最小限の変更だけを行う
+- 既存の共通ヘッダー、共通フッターは勝手に変更しない
+
+出力:
+1. 変更予定ファイル
+2. 変更内容
+3. 変更理由
+4. 確認方法
+5. 残るリスク
+EOF
+
+cat > "$RUN_DIR/backend.prompt" <<EOF
+\$company-backend
+
+社長からの依頼:
+${TASK}
+
+あなたはバックエンドエンジニアです。
+
+役割:
+- API、DB、認証、バリデーション、業務ロジックを担当する
+- 変更前に、触る予定のファイルを表示する
+- フロントエンドの見た目は勝手に変更しない
+- DB変更、認証変更、権限変更は特に慎重に扱う
+- 必要最小限の変更だけを行う
+
+出力:
+1. 変更予定ファイル
+2. 変更内容
+3. DB変更の有無
+4. 権限・バリデーション確認
+5. 確認コマンド
+6. 残るリスク
+EOF
+
+cat > "$RUN_DIR/reviewer.prompt" <<EOF
+\$company-review-test
+
+社長からの依頼:
+${TASK}
+
+あなたはレビュアー・テスターです。
+
+役割:
+- コード変更はしない
+- 現在の差分を確認する
+- 仕様漏れ、バグ、異常系、権限、セキュリティ、テスト不足を確認する
+- 重大度を分けて指摘する
+
+出力:
+1. 重大な問題
+2. 中程度の問題
+3. 軽微な問題
+4. テスト不足
+5. 追加すべきテスト
+6. 確認コマンド
+7. リリース前リスク
+EOF
+
+tmux new-session -d -s "$SESSION" -c "$ROOT" -n "codex-company"
+
+PANE_PM="$(tmux display-message -p -t "$SESSION:0.0" "#{pane_id}")"
+PANE_DESIGNER="$(tmux split-window -h -P -F "#{pane_id}" -t "$PANE_PM" -c "$ROOT")"
+
+PANE_FRONTEND="$(tmux split-window -v -P -F "#{pane_id}" -t "$PANE_PM" -c "$ROOT")"
+PANE_BACKEND="$(tmux split-window -v -P -F "#{pane_id}" -t "$PANE_DESIGNER" -c "$ROOT")"
+
+PANE_REVIEWER="$(tmux split-window -v -P -F "#{pane_id}" -t "$PANE_FRONTEND" -c "$ROOT")"
+PANE_GIT="$(tmux split-window -v -P -F "#{pane_id}" -t "$PANE_BACKEND" -c "$ROOT")"
+
+tmux select-layout -t "$SESSION:0" tiled
+
+tmux set-option -t "$SESSION" status on
+tmux set-option -t "$SESSION" status-position bottom
+tmux set-option -t "$SESSION" status-style "bg=colour235,fg=colour250"
+tmux set-option -t "$SESSION" status-left-length 100
+tmux set-option -t "$SESSION" status-right-length 140
+tmux set-option -t "$SESSION" status-left " #[bold,fg=colour51]Codex Company#[default] #[fg=colour245]| 社長: あなた "
+tmux set-option -t "$SESSION" status-right " #[fg=colour245]Ctrl+b z: 拡大/戻す | Ctrl+b 矢印: 移動 | Ctrl+b d: 離脱 | #[bold,fg=colour226]%H:%M#[default] "
+
+tmux set-window-option -t "$SESSION:0" pane-border-status top
+tmux set-window-option -t "$SESSION:0" pane-border-format " #[bold,fg=colour51]#{pane_title}#[default] "
+tmux set-window-option -t "$SESSION:0" pane-border-style "fg=colour238"
+tmux set-window-option -t "$SESSION:0" pane-active-border-style "fg=colour226,bold"
+tmux set-window-option -t "$SESSION:0" mouse on
+tmux set-window-option -t "$SESSION:0" display-panes-time 3000
+tmux set-window-option -t "$SESSION:0" display-panes-colour colour51
+tmux set-window-option -t "$SESSION:0" display-panes-active-colour colour226
+
+tmux select-pane -t "$PANE_PM" -T "👔 部長PM / 作業分解 / read-only"
+tmux select-pane -t "$PANE_DESIGNER" -T "🎨 デザイナー / UI・UX / read-only"
+tmux select-pane -t "$PANE_FRONTEND" -T "🖥 フロントエンド / 画面実装 / workspace-write"
+tmux select-pane -t "$PANE_BACKEND" -T "🗄 バックエンド / API・DB / workspace-write"
+tmux select-pane -t "$PANE_REVIEWER" -T "🧪 レビュアー・テスター / 品質確認 / read-only"
+tmux select-pane -t "$PANE_GIT" -T "📊 Git監視 / 差分確認"
+
+run_codex_pane() {
+  local pane_id="$1"
+  local role_label="$2"
+  local sandbox="$3"
+  local prompt_file="$4"
+
+  local root_q
+  local prompt_q
+  local label_q
+
+  root_q="$(printf "%q" "$ROOT")"
+  prompt_q="$(printf "%q" "$prompt_file")"
+  label_q="$(printf "%q" "$role_label")"
+
+  tmux send-keys -t "$pane_id" "clear; printf '\033[1;37;44m %s \033[0m\n\n' $label_q; codex --cd $root_q --sandbox $sandbox --ask-for-approval on-request \"\$(cat $prompt_q)\"" C-m
+}
+
+run_codex_pane "$PANE_PM" "👔 部長PM / 作業分解 / read-only" "read-only" "$RUN_DIR/pm.prompt"
+run_codex_pane "$PANE_DESIGNER" "🎨 デザイナー / UI・UX / read-only" "read-only" "$RUN_DIR/designer.prompt"
+run_codex_pane "$PANE_FRONTEND" "🖥 フロントエンド / 画面実装 / workspace-write" "workspace-write" "$RUN_DIR/frontend.prompt"
+run_codex_pane "$PANE_BACKEND" "🗄 バックエンド / API・DB / workspace-write" "workspace-write" "$RUN_DIR/backend.prompt"
+run_codex_pane "$PANE_REVIEWER" "🧪 レビュアー・テスター / 品質確認 / read-only" "read-only" "$RUN_DIR/reviewer.prompt"
+
+ROOT_Q="$(printf "%q" "$ROOT")"
+
+tmux send-keys -t "$PANE_GIT" "cd $ROOT_Q; while true; do clear; printf '\033[1;30;42m 📊 Git監視 / 差分確認 \033[0m\n\n'; echo '=== git status --short ==='; git status --short; echo; echo '=== git diff --stat ==='; git diff --stat; echo; echo '=== 操作メモ ==='; echo 'Ctrl+b z      : 選択ペインを拡大/戻す'; echo 'Ctrl+b 矢印   : ペイン移動'; echo 'Ctrl+b d      : tmuxから一時離脱'; echo '復帰          : tmux attach -t $SESSION'; sleep 3; done" C-m
+
+tmux select-pane -t "$PANE_PM"
+
+echo "Codex Company を起動します。"
+echo "セッション名: $SESSION"
+echo "プロンプト保存先: $RUN_DIR"
+
+tmux attach-session -t "$SESSION"
