@@ -227,6 +227,44 @@ cd /path/to/target-project
 
 ---
 
+## 🆕 新しいアプリを作るとき
+
+新しいアプリや継続案件を作る場合、Codexには次のように依頼します。
+
+```bash
+./bin/codex-company "家計簿アプリを新しく作りたい。アプリ名は household-budget です"
+```
+
+このとき、Codexは最初に以下のファイルを作るルールです。
+
+```text
+projects/<アプリ名>/README.md
+```
+
+例:
+
+```text
+projects/household-budget/README.md
+projects/receipt-fridge-ai/README.md
+projects/gameapp/README.md
+```
+
+最初のREADME.mdには、以下を書く想定です。
+
+```text
+・アプリ概要
+・作成目的
+・想定ユーザー
+・主な機能
+・技術構成
+・追加フォルダを作る場合の理由
+```
+
+`projects/` フォルダは、今のリポジトリに空フォルダとして置いておく必要はありません。  
+GitHubは空フォルダを保持できないため、Codexが新しいアプリを作るタイミングで `projects/<アプリ名>/README.md` を作成します。
+
+---
+
 ## 🖱 tmuxの基本操作
 
 codex-companyは、画面分割のために `tmux` を使います。
@@ -339,6 +377,9 @@ codex-company/
       └─ codex-company
 ```
 
+`projects/` は初期ファイルとしては置きません。  
+新しいアプリ作成時に、Codexが `projects/<アプリ名>/README.md` を作成します。
+
 ---
 
 ## 🧩 各ファイルの役割
@@ -350,6 +391,8 @@ Codex全体に読ませる共通ルールです。
 ```text
 ・役職定義
 ・作業方針
+・新規アプリ作成ルール
+・新規ファイル作成ルール
 ・変更禁止ルール
 ・出力ルール
 ```
@@ -506,6 +549,28 @@ tmuxで6分割画面が開けば成功です。
 
 ---
 
+### 7. 新規アプリ作成ルールの確認
+
+Codexに新しいアプリ作成を依頼した場合、最初に以下を作る運用です。
+
+```text
+projects/<アプリ名>/README.md
+```
+
+例:
+
+```bash
+./bin/codex-company "新しいメモアプリを作りたい。アプリ名は memo-app です。まずREADMEから作ってください"
+```
+
+期待される最初の作成ファイル:
+
+```text
+projects/memo-app/README.md
+```
+
+---
+
 ## 🔐 権限設計
 
 役職ごとの権限は以下です。
@@ -561,6 +626,23 @@ cd /tmp/codex-company-test-project
 ・Codexが各役職ごとのプロンプトで起動する
 ・コード変更しない指示の場合、差分が出ない
 ```
+
+---
+
+### 新規アプリ作成ルール確認
+
+```bash
+cd /tmp/codex-company-test-project
+./bin/codex-company "新しいテストアプリを作りたい。アプリ名は sample-app です。まずREADMEだけ作ってください"
+```
+
+期待される作成ファイル:
+
+```text
+projects/sample-app/README.md
+```
+
+この確認では、いきなり実装ファイルを作らず、README.mdから始まっていればOKです。
 
 ---
 
