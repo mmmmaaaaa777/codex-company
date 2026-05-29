@@ -41,6 +41,11 @@ find "$TEMPLATE_DIR" -type f | while read -r src; do
 done
 
 chmod +x "$TARGET/bin/codex-company" 2>/dev/null || true
+chmod +x "$TARGET/bin/codex-rate-status" 2>/dev/null || true
+
+# Remove stale rate status cache so newly installed scripts are reflected immediately.
+rm -f "${XDG_CACHE_HOME:-$HOME/.cache}/codex-company/codex-rate-status.json" 2>/dev/null || true
+
 
 echo ""
 echo "セットアップ完了"
