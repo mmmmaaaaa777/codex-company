@@ -29,6 +29,8 @@ fi
 ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 SESSION="codex-company-$(date +%Y%m%d-%H%M%S)"
 RUN_DIR="$ROOT/.codex-company/runs/$(date +%Y%m%d-%H%M%S)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RATE_STATUS_SCRIPT="$SCRIPT_DIR/codex-rate-status"
 
 mkdir -p "$RUN_DIR"
 
@@ -167,11 +169,17 @@ tmux select-layout -t "$SESSION:0" tiled
 
 tmux set-option -t "$SESSION" status on
 tmux set-option -t "$SESSION" status-position bottom
+tmux set-option -t "$SESSION" status-interval 15
 tmux set-option -t "$SESSION" status-style "bg=colour235,fg=colour250"
 tmux set-option -t "$SESSION" status-left-length 100
-tmux set-option -t "$SESSION" status-right-length 140
+tmux set-option -t "$SESSION" status-right-length 220
 tmux set-option -t "$SESSION" status-left " #[bold,fg=colour51]Codex Company#[default] #[fg=colour245]| 社長: あなた "
-tmux set-option -t "$SESSION" status-right " #[fg=colour245]Ctrl+b z: 拡大/戻す | Ctrl+b 矢印: 移動 | Ctrl+b d: 離脱 | #[bold,fg=colour226]%H:%M#[default] "
+
+if [ -x "$RATE_STATUS_SCRIPT" ]; then
+  tmux set-option -t "$SESSION" status-right " #[fg=colour245]#($RATE_STATUS_SCRIPT) | Ctrl+b z: 拡大/戻す | Ctrl+b 矢印: 移動 | Ctrl+b d: 離脱 | #[bold,fg=colour226]%H:%M#[default] "
+else
+  tmux set-option -t "$SESSION" status-right " #[fg=colour245]Codex: rate unavailable | Ctrl+b z: 拡大/戻す | Ctrl+b 矢印: 移動 | Ctrl+b d: 離脱 | #[bold,fg=colour226]%H:%M#[default] "
+fi
 
 tmux set-window-option -t "$SESSION:0" pane-border-status top
 tmux set-window-option -t "$SESSION:0" pane-border-format " #[bold,fg=colour51]#{pane_title}#[default] "
@@ -214,7 +222,7 @@ run_codex_pane "$PANE_REVIEWER" "🧪 レビュアー・テスター / 品質確
 
 ROOT_Q="$(printf "%q" "$ROOT")"
 
-tmux send-keys -t "$PANE_GIT" "cd $ROOT_Q; while true; do clear; printf '\033[1;30;42m 📊 Git監視 / 差分確認 \033[0m\n\n'; echo '=== git status --short ==='; git status --short; echo; echo '=== git diff --stat ==='; git diff --stat; echo; echo '=== 操作メモ ==='; echo 'Ctrl+b z      : 選択ペインを拡大/戻す'; echo 'Ctrl+b 矢印   : ペイン移動'; echo 'Ctrl+b d      : tmuxから一時離脱'; echo '復帰          : tmux attach -t $SESSION'; sleep 3; done" C-m
+tmux send-keys -t "$PANE_GIT" "cd $ROOT_Q; while true; do clear; printf '\033[1;30;42m 📊 Git監視 / 差分確認 \033[0m\n\n'; echo '=== git status --short ==='; git status --short; echo; echo '=== git diff --stat ==='; git diff --stat; echo; echo '=== Codex rate ==='; if [ -x ./bin/codex-rate-status ]; then ./bin/codex-rate-status; else echo 'Codex: rate unavailable'; fi; echo; echo '=== 操作メモ ==='; echo 'Ctrl+b z      : 選択ペインを拡大/戻す'; echo 'Ctrl+b 矢印   : ペイン移動'; echo 'Ctrl+b d      : tmuxから一時離脱'; echo '復帰          : tmux attach -t $SESSION'; sleep 3; done" C-m
 
 tmux select-pane -t "$PANE_PM"
 
